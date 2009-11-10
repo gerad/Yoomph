@@ -4,23 +4,16 @@
 <head>
   <link rel="stylesheet" href="../qunit/qunit.css" type="text/css" media="screen" />
   <script type="text/javascript" src="../../lib/js/jquery.js"></script>
-  <script type="text/javascript" src="../../lib/js/base2.js"></script>
   <script type="text/javascript" src="../../lib/js/kite.js"></script>
   <script type="text/javascript" src="../qunit/qunit.js"></script>
 
   <script>
-new Kite(function() {
-  eval(Kite.imports)
-
 test("truth", function() {
   ok(true);
 });
 
 test("person", function() {
   ok(new Person());
-});
-
-QUnit.start();
 });
   </script>
 

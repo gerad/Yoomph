@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" 
+                    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <link rel="stylesheet" href="../qunit/qunit.css" type="text/css" media="screen" />
+  <script type="text/javascript" src="../../lib/js/jquery.js"></script>
+  <script type="text/javascript" src="../../lib/js/kite.js"></script>
+  <script type="text/javascript" src="../qunit/qunit.js"></script>
+
+  <script>new function(_) { // closure
+
+eval(Kite.provides);
+
+var Foo = Class.create(function() {
+  this.init = function(bool) {
+    var _bar = this._bar = bool;
+    this.privateBar = function privateBar() { return _bar; }
+  };
+  this.bar = function bar() { return this._bar; };
+});
+
+test("class", function() {
+  var f = new Foo(true);
+  ok(f, 'can instantiate Foo');
+  ok(f instanceof Foo, 'f is an instance of Foo');
+  ok(f.bar, 'f has a bar method');
+  ok(f.bar(), 'f.bar() can be called');
+  ok(Foo.prototype.bar, 'the bar method is on the Foo prototype');
+  equals(Foo, f.__class__, 'the f instance can access it\'s class');
+  equals(Foo.prototype, f.__class__.prototype,
+    'the f instance can access it\'s prototype');
+  ok(!Foo._bar, 'Foo does not have a _bar variable');
+  ok(!Foo.prototype._bar, 'Foo prototype does not have a _bar variable');
+});
+
+test("subclass", function() {
+  var Bar = Foo.extend(function() {
+    this.baz = function() { return true; };
+  });
+  var b = new Bar(true);
+  ok(b, 'can instantiate Bar');
+  ok(b instanceof Bar, 'b is an instance of Bar');
+  ok(b instanceof Foo, 'b is an instance of Foo');
+  ok(b.bar(), 'b has the bar() method');
+  ok(b.baz(), 'b has the baz() method');
+  equals(Bar, b.__class__, 'instance can access it\'s class');
+  equals(Bar.prototype, b.__class__.prototype,
+    'instance can access it\'s prototype');
+  equals(Foo, Bar.__super__, 'class can access it\'s super class');
+  equals(Foo, b.__super__, 'instance can access it\'s super class');
+  ok(!Bar._bar, 'Bar does not have a _bar variable');
+  ok(!Bar.prototype._bar, 'Bar prototype does not have a _bar variable');
+});  
+
+test("classes don't share this", function() {
+  var f1 = new Foo();
+  ok(!f1.bar(), 'f1 bar is initially false');
+  var f2 = new Foo(true);
+  ok(f2.bar() && !f1.bar(),
+    'f1 bar remains false when f2 bar is set to true');
+});
+
+test("classes can have private", function() {
+  var f1 = new Foo();
+  ok(!f1.privateBar(), 'f1 bar is initially false');
+  var f2 = new Foo(true);
+  ok(f2.privateBar() && !f1.privateBar(),
+    'f1 bar remains false when f2 bar is set to true');
+});
+
+
+test("class mixin", function() {});
+
+test("prototype mixin", function() {});
+
+test("instance mixin", function() {});
+
+  }</script>
+
+</head>
+<body>
+ <h1 id="qunit-header">Person Tests</h1>
+ <h2 id="qunit-banner"></h2>
+ <h2 id="qunit-userAgent"></h2>
+
+ <ol id="qunit-tests"></ol>
+</body>
+</html>
