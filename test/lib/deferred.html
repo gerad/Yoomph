@@ -25,6 +25,13 @@ var AsyncStack = Class.create(function() {
     this.items.push(item);
   };
 
+  this.push3 = function push3(item) {
+    var d = new Deferred().pause();
+    var self = this;
+    async(function() { self.items.push(item); d.restart() })
+    return d;
+  }
+
   // private
   function async(fn) {
     stop(); // stop qunit
@@ -42,10 +49,18 @@ test("deferred", function() {
     d.fn(a.push1, [1, d.okFn], a), // asynchronous, not deferred aware
     d.fn(a.push2, [2], a), // synchronous
     d.fn(a.push2, [3], a),
-    function() { same(a.items, [1, 2, 3]); }
+    d.fn(a.push3, [4], a), // asynchronous, deferred aware
+    d.fn(a.push2, [5], a),
+    function() { same(a.items, [1, 2, 3, 4, 5]); }
   );
   expect(1);
 });
+
+test("pass through", function() {
+  var d = new Deferred();
+  expect(1);
+});
+
 
   }</script>
 
