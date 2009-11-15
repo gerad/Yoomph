@@ -11,6 +11,15 @@
   <script>new function(_) { // closure
 eval(Kite.provides());
 
+// private
+function async(fn) {
+  stop(); // stop qunit
+  setTimeout(function() {
+    fn();
+    start(); // restart qunit
+  }, 0);
+}
+
 var AsyncStack = Class.create(function() {
   this.init = function init() {
     this.items = [];
@@ -31,15 +40,6 @@ var AsyncStack = Class.create(function() {
     async(function() { self.items.push(item); d.restart() })
     return d;
   }
-
-  // private
-  function async(fn) {
-    stop(); // stop qunit
-    setTimeout(function() {
-      fn();
-      start(); // restart qunit
-    }, 0);
-  }
 });
 
 test("deferred", function() {
@@ -57,6 +57,32 @@ test("deferred", function() {
 });
 
 test("pass through", function() {
+  function increment(i) { return i + 1; }
+  function asyncIncrement(i, callback) {
+    async(function() { callback(i + 1); });
+  }
+  function asyncIncrement2(i) {
+    var d = new Deferred().pause();
+    async(function() { d.restart(i + 1); });
+    return d;
+  }
+
+  var d = new Deferred();
+  d.add(
+    d.fn(asyncIncrement, [0, d.okFn]),
+    increment,
+    increment,
+    asyncIncrement2,
+    increment,
+    function(result) {
+      equals(result, 5, "incremented the correct number of times");
+    }
+  );
+
+  expect(1);
+});
+
+test("errors", function() {
   var d = new Deferred();
   expect(1);
 });
