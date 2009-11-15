@@ -13,11 +13,7 @@ eval(Kite.provides());
 
 // private
 function async(fn) {
-  stop(); // stop qunit
-  setTimeout(function() {
-    fn();
-    start(); // restart qunit
-  }, 0);
+  setTimeout(fn, 0);
 }
 
 var AsyncStack = Class.create(function() {
@@ -51,9 +47,9 @@ test("deferred", function() {
     d.fn(a.push2, [3], a),
     d.fn(a.push3, [4], a), // asynchronous, deferred aware
     d.fn(a.push2, [5], a),
-    function() { same(a.items, [1, 2, 3, 4, 5]); }
+    function() { start(); same(a.items, [1, 2, 3, 4, 5]); }
   );
-  expect(1);
+  expect(1); stop();
 });
 
 test("pass through", function() {
@@ -75,11 +71,11 @@ test("pass through", function() {
     asyncIncrement2,
     increment,
     function(result) {
-      equals(result, 5, "incremented the correct number of times");
+      start(); equals(result, 5, "incremented the correct number of times");
     }
   );
 
-  expect(1);
+  expect(1); stop();
 });
 
 test("errors", function() {
