@@ -4,12 +4,13 @@
 <head>
   <link rel="stylesheet" href="../qunit/qunit.css" type="text/css" media="screen" />
   <script type="text/javascript" src="../../lib/js/jquery.js"></script>
+  <script type="text/javascript" src="../../lib/js/underscore.js"></script>
   <script type="text/javascript" src="../../lib/js/kite.js"></script>
   <script type="text/javascript" src="../qunit/qunit.js"></script>
 
   <script>new function(_) { // closure
 
-eval(Kite.provides);
+eval(Kite.provides());
 
 var Foo = Class.create(function() {
   this.init = function(bool) {
@@ -26,11 +27,9 @@ test("class", function() {
   ok(f.bar, 'f has a bar method');
   ok(f.bar(), 'f.bar() can be called');
   ok(Foo.prototype.bar, 'the bar method is on the Foo prototype');
-  equals(Foo, f.__class__, 'the f instance can access it\'s class');
-  equals(Foo.prototype, f.__class__.prototype,
+  equals(f.__class__, Foo, 'the f instance can access it\'s class');
+  equals(f.__class__.prototype, Foo.prototype,
     'the f instance can access it\'s prototype');
-  ok(!Foo._bar, 'Foo does not have a _bar variable');
-  ok(!Foo.prototype._bar, 'Foo prototype does not have a _bar variable');
 });
 
 test("subclass", function() {
@@ -43,13 +42,11 @@ test("subclass", function() {
   ok(b instanceof Foo, 'b is an instance of Foo');
   ok(b.bar(), 'b has the bar() method');
   ok(b.baz(), 'b has the baz() method');
-  equals(Bar, b.__class__, 'instance can access it\'s class');
-  equals(Bar.prototype, b.__class__.prototype,
+  equals(b.__class__, Bar, 'instance can access it\'s class');
+  equals(b.__class__.prototype, Bar.prototype,
     'instance can access it\'s prototype');
-  equals(Foo, Bar.__super__, 'class can access it\'s super class');
-  equals(Foo, b.__super__, 'instance can access it\'s super class');
-  ok(!Bar._bar, 'Bar does not have a _bar variable');
-  ok(!Bar.prototype._bar, 'Bar prototype does not have a _bar variable');
+  equals(Bar.__super__, Foo, 'class can access it\'s super class');
+  equals(b.__super__, Foo, 'instance can access it\'s super class');
 });  
 
 test("classes don't share this", function() {
@@ -68,18 +65,21 @@ test("classes can have private", function() {
     'f1 bar remains false when f2 bar is set to true');
 });
 
-
-test("class mixin", function() {});
-
-test("prototype mixin", function() {});
-
-test("instance mixin", function() {});
+test("class and prototype methods", function() {
+  var Baz = Class.create(function(Baz) {
+    Baz.foo = function() { return "class method"; };
+    this.foo = function() { return "prototype method"; };
+  });
+  var b = new Baz();
+  equals(Baz.foo(), "class method", "class method call correct");
+  equals(b.foo(), "prototype method", "prototype method call correct");
+});
 
   }</script>
 
 </head>
 <body>
- <h1 id="qunit-header">Person Tests</h1>
+ <h1 id="qunit-header">Class Tests</h1>
  <h2 id="qunit-banner"></h2>
  <h2 id="qunit-userAgent"></h2>
 
