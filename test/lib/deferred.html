@@ -11,10 +11,8 @@
   <script>new function(_) { // closure
 eval(Kite.provides());
 
-// private
-function async(fn) {
-  setTimeout(fn, 0);
-}
+function async(fn) { setTimeout(fn, 0); }
+function error() { throw "error!"; }
 
 var AsyncStack = Class.create(function() {
   this.init = function init() {
@@ -78,8 +76,47 @@ test("pass through", function() {
   expect(1); stop();
 });
 
-test("errors", function() {
+test("can handle errors", function() {
   var d = new Deferred();
+
+  try {
+    d.add(error, {
+      ok: function() { ok(false, "shouldn't get here"); },
+      error: function(e) {
+        equals(e.message, "error!", "error is passed correctly"); }
+    },
+    d.fn(ok, [true, "should get here"]));
+  } catch (e) {
+    ok(false, "shouldn't get here");
+  }
+
+  expect(2);
+});
+
+
+test("throws unhandled error", function() {
+  var d = new Deferred();
+
+  try {
+    d.add(error, ok);
+  } catch (e) {
+    equals(e.message, "error!", "error is thrown correctly")
+  }
+
+  expect(1);
+});
+
+test("throws final error", function() {
+  function error() { throw "error!"; }
+
+  var d = new Deferred();
+
+  try {
+    d.add(error);
+  } catch (e) {
+    equals(e.message, "error!", "error is thrown correctly")
+  }
+
   expect(1);
 });
 
