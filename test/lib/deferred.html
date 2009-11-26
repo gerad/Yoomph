@@ -63,17 +63,19 @@ test("pass through", function() {
 
   var d = new Deferred();
   d.add(
-    d.fn(asyncIncrement, [0, d.okFn]),
+    d.fn(asyncIncrement, [0, d.okFn]), // async with callback
+    increment, // synchronous
     increment,
-    increment,
-    asyncIncrement2,
+    asyncIncrement2, // async with deferred
     increment,
     function(result) {
-      start(); equals(result, 5, "incremented the correct number of times");
+      equals(result, 5, "incremented the correct number of times");
+      start(); // for qunit
     }
   );
 
-  expect(1); stop();
+  expect(1);
+  stop(); // for qunit
 });
 
 test("can handle errors", function() {
@@ -108,7 +110,6 @@ test("throws unhandled error", function() {
 
 test("throws final error", function() {
   function error() { throw "error!"; }
-
   var d = new Deferred();
 
   try {
