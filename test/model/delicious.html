@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" 
+                    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <link rel="stylesheet" href="../qunit/qunit.css" type="text/css" media="screen" />
+  <script type="text/javascript" src="../../lib/js/jquery.js"></script>
+  <script type="text/javascript" src="../../lib/js/underscore.js"></script>
+  <script type="text/javascript" src="../../lib/js/kite.js"></script>
+  <script type="text/javascript" src="../helper.js"></script>
+  <script type="text/javascript" src="../qunit/qunit.js"></script>
+  <script type="text/javascript" src="../../app/models/delicious.js"></script>
+
+  <script>new function(_) { // closure
+eval(Kite.provides());
+
+test("can load jsonp", function() {
+	var expected = "callback works!";
+	load.mock(function(url) {
+		equals(url, "http://feeds.delicious.com/v2/json/gerad"
+		  + "?count=100&callback=Kite.provide.Delicious.callback0");
+		Kite.provide.Delicious.callback0(expected);
+	});
+  Delicious.load("gerad", function(result) {
+		equals(result, expected);
+  });
+  expect(2);
+});
+
+test("can load links", function() {
+	var expected = "callback works!";
+	load.mock(function(url) {
+		equals(url, "http://feeds.delicious.com/v2/json/gerad"
+		  + "?count=100&callback=Kite.provide.Delicious.callback1");
+		Kite.provide.Delicious.callback1(expected);
+	});
+
+	var delicious = new Delicious("gerad");
+  delicious.links().after(function(links) {
+		equals(links, expected);
+	});
+  expect(2);
+});
+
+
+  }</script>
+
+</head>
+<body>
+ <h1 id="qunit-header">Delicious Tests</h1>
+ <h2 id="qunit-banner"></h2>
+ <h2 id="qunit-userAgent"></h2>
+
+ <ol id="qunit-tests"></ol>
+</body>
+</html>
