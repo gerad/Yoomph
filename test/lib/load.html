@@ -11,16 +11,16 @@
   <script>new function(_) { // closure
 eval(Kite.provides());
 
-test("can require", function() {
-  require('../fixtures/require/set_foo.js').next(function() {
+test("can load", function() {
+  load('../fixtures/load/set_foo.js').next(function() {
     ok(foo);
     start();
   });
   expect(1); stop();
 });
 
-test("require in order", function() {
-  require('../fixtures/require/one.js', '../fixtures/require/two.js').next(function() {
+test("load in order", function() {
+  load('../fixtures/load/one.js', '../fixtures/load/two.js').next(function() {
     equals(one, 2);
     start();
   });
@@ -31,7 +31,7 @@ test("require in order", function() {
 
 </head>
 <body>
- <h1 id="qunit-header">Require Tests</h1>
+ <h1 id="qunit-header">Load Tests</h1>
  <h2 id="qunit-banner"></h2>
  <h2 id="qunit-userAgent"></h2>
 

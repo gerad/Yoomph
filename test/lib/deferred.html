@@ -95,7 +95,6 @@ test("can handle errors", function() {
   expect(2);
 });
 
-
 test("throws unhandled error", function() {
   var d = new Deferred();
 
@@ -121,6 +120,13 @@ test("throws final error", function() {
   expect(1);
 });
 
+test("restart state saved", function() {
+  var expected = "state saved!";
+  var d = new Deferred();
+  d.add(function() { return expected; });
+  d.add(function(result) { equals(result, expected); });
+  expect(1);
+});
 
   }</script>
 
