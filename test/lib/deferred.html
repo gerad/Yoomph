@@ -64,15 +64,6 @@ test("deferred with context", function() {
   expect(1); stop();
 });
 
-test("can join self", function() {
-  var d = new Deferred();
-  d.add(
-		function() { return d; },
-		function() { ok(true); }
-  );
-  expect(1);
-});
-
 test("pass through", function() {
   function increment(i) { return i + 1; }
   function asyncIncrement(i, callback) {
@@ -102,16 +93,16 @@ test("pass through", function() {
 });
 
 test("pass through with context", function() {
-	var C = function() {};
-	C.prototype.set = function() { this._store = 'foo'; };
-	C.prototype.get = function() { return this._store; };
-	var c = new C();
+  var C = function() {};
+  C.prototype.set = function() { this._store = 'foo'; };
+  C.prototype.get = function() { return this._store; };
+  var c = new C();
   var d = new Deferred(c);
   d.add(
-		c.set,
+    c.set,
     c.get,
-		function(foo) { equals(foo, 'foo'); }
-	);
+    function(foo) { equals(foo, 'foo'); }
+  );
   expect(1);
 });
 

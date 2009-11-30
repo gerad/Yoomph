@@ -14,30 +14,30 @@
 eval(Kite.provides());
 
 test("can load jsonp", function() {
-	var expected = "callback works!";
-	load.mock(function(url) {
-		equals(url, "http://feeds.delicious.com/v2/json/gerad"
-		  + "?count=100&callback=Kite.provide.Delicious.callback0");
-		Kite.provide.Delicious.callback0(expected);
-	});
+  var expected = "callback works!";
+  load.mock(function(url) {
+    equals(url, "http://feeds.delicious.com/v2/json/gerad"
+      + "?count=100&callback=Kite.provide.Delicious.callback0");
+    Kite.provide.Delicious.callback0(expected);
+  });
   Delicious.load("gerad", function(result) {
-		equals(result, expected);
+    equals(result, expected);
   });
   expect(2);
 });
 
 test("can load links", function() {
-	var expected = "callback works!";
-	load.mock(function(url) {
-		equals(url, "http://feeds.delicious.com/v2/json/gerad"
-		  + "?count=100&callback=Kite.provide.Delicious.callback1");
-		Kite.provide.Delicious.callback1(expected);
-	});
+  var expected = "callback works!";
+  load.mock(function(url) {
+    equals(url, "http://feeds.delicious.com/v2/json/gerad"
+      + "?count=100&callback=Kite.provide.Delicious.callback1");
+    Kite.provide.Delicious.callback1(expected);
+  });
 
-	var delicious = new Delicious("gerad");
-  delicious.links().after(function(links) {
-		equals(links, expected);
-	});
+  var delicious = new Delicious("gerad");
+  delicious.getLinks().after(function(links) {
+    equals(links, expected);
+  });
   expect(2);
 });
 
