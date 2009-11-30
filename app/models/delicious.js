@@ -2,28 +2,64 @@ new function(_) {
 eval(Kite.provides());
 
 var Delicious = provide.Delicious = Class.create(function(Delicious) {
+  this.init = function(userName) {
+		this._deferred = new Deferred(this);
+		this._links = {};
 
-  this.init = function(user) {
-		this._user = user;
-		this._deferred = new Deferred();
+		this._person = this.person(userName);
 	};
 
-  this.links = function() {
-		return this.dLoad('_links', this._user);
+  this.run = function() {
+		this._deferred.add(
+      this.getLinks,
+		  this.getOtherPeople,
+      this.getOtherPeoplesLinks);
+	}
+
+	this.getLinks = function() {
+		return this._person.links();
 	};
 
-  this.linkPeople = function(link) {
-		var linkMD5 = md5(link);
-		this.dLoad('_links', 'url/' + linkMD5);
+  this.getOtherPeople = function(links) {
+		_(links).each(function(link) {
+		  link.people();
+		});
+		return this._people;
 	};
 
-  this.dLoad = function(variable, path) {
-		var d = this._deferred, self = this;
-		if (!(variable in this))
-			d.add(d.fn(Delicious.load, [path, d.okFn]),
-				function(ret) { self[variable] = ret; });
-		d.add(function() { return self[variable]; });
-		return d;
+  this.getOtherPeoplesLinks = function(people) {
+		_(people).each(function(person) {
+			person.links();
+		});
+	};
+
+  /* steps:
+	 * 1. get links for the person
+	 * 2. get all the people who have the same links
+	 * 3. get all the other links for those people
+	 * 4. calculate the most common links
+	 * 5. subtract out the links that the person already has
+	 */
+
+  this.person = function(opts) {
+		var userName = opts.a;
+		if (!(userName in this._people)) {
+			this._people[userName] = new Delicious.Person(this, userName);
+		}
+		return this._people[userName];
+	};
+
+  this.link = function(opts) {
+		var url = opts.u;
+		if (!(url in this._links)) {
+			this._links[url] = new Delicious.Link(this, url);
+		}
+		return this._links[url];
+	};
+
+  this.load = function(path) {
+		var d = this._deferred;
+		return d.add(d.fn(Delicious.load, [path, d.okFn]));
 	};
 
   var baseURI = "http://feeds.delicious.com/v2/json/";
@@ -38,9 +74,31 @@ var Delicious = provide.Delicious = Class.create(function(Delicious) {
 			+ jsonpCallback;
 		load(baseURI + path + params);
   };
-
 });
 
+Delicious.Person = Class.create(function(Person) {
+  this.init = function(delicious, name) {
+		this._delicious = delicious;
+		this._name = name;
+		this._links = [];
+	};
+
+  this.links = function() {
+		return this._delicious.load(this._name);
+	};
+});
+
+Delicious.Link = Class.create(function(Link) {
+  this.init = function(url) {
+		this._delicious = delicious;
+		this._url = url;
+		this._people = [];
+	};
+
+  this.people = function() {
+		return this._delicious.load('url/' + md5(this._url));
+	};
+});
 
 /**
 *
@@ -249,5 +307,6 @@ function md5(string) {
 
 	return temp.toLowerCase();
 }
+
 
 }

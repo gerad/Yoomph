@@ -50,6 +50,29 @@ test("deferred", function() {
   expect(1); stop();
 });
 
+test("deferred with context", function() {
+  var a = new AsyncStack();
+  var d = new Deferred(a);
+  d.add(
+    d.fn(a.push1, [1, d.okFn]), // asynchronous, not deferred aware
+    d.fn(a.push2, [2]), // synchronous
+    d.fn(a.push2, [3]),
+    d.fn(a.push3, [4]), // asynchronous, deferred aware
+    d.fn(a.push2, [5]),
+    function() { start(); same(a.items, [1, 2, 3, 4, 5]); }
+  );
+  expect(1); stop();
+});
+
+test("can join self", function() {
+  var d = new Deferred();
+  d.add(
+		function() { return d; },
+		function() { ok(true); }
+  );
+  expect(1);
+});
+
 test("pass through", function() {
   function increment(i) { return i + 1; }
   function asyncIncrement(i, callback) {
@@ -76,6 +99,20 @@ test("pass through", function() {
 
   expect(1);
   stop(); // for qunit
+});
+
+test("pass through with context", function() {
+	var C = function() {};
+	C.prototype.set = function() { this._store = 'foo'; };
+	C.prototype.get = function() { return this._store; };
+	var c = new C();
+  var d = new Deferred(c);
+  d.add(
+		c.set,
+    c.get,
+		function(foo) { equals(foo, 'foo'); }
+	);
+  expect(1);
 });
 
 test("can handle errors", function() {
