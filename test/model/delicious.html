@@ -10,7 +10,7 @@
   <script type="text/javascript" src="../qunit/qunit.js"></script>
   <script type="text/javascript" src="../../app/models/delicious.js"></script>
 
-  <script>new function(_) { // closure
+  <script>new function() { // closure
 eval(Kite.provides());
 
 test("can load jsonp", function() {
@@ -20,23 +20,25 @@ test("can load jsonp", function() {
       + "?count=100&callback=Kite.provide.Delicious.callback0");
     Kite.provide.Delicious.callback0(expected);
   });
-  Delicious.load("gerad", function(result) {
+  Delicious.load("gerad").after(function(result) {
     equals(result, expected);
   });
   expect(2);
 });
 
 test("can load links", function() {
-  var expected = "callback works!";
+  var expected = [{u:'http://a.com/'},{u:'http://b.com/'}];
   load.mock(function(url) {
     equals(url, "http://feeds.delicious.com/v2/json/gerad"
       + "?count=100&callback=Kite.provide.Delicious.callback1");
     Kite.provide.Delicious.callback1(expected);
   });
 
-  var delicious = new Delicious("gerad");
+  var delicious = new Delicious.Person("gerad");
   delicious.getLinks().after(function(links) {
-    equals(links, expected);
+    same(
+      _(links).pluck('_url'),
+      _(expected).pluck('u'));
   });
   expect(2);
 });

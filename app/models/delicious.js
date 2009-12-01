@@ -1,9 +1,9 @@
-new function(_) {
+new function() {
 eval(Kite.provides());
 
 var Delicious = provide.Delicious = Class.create(function(Delicious) {
   this.init = function(userName) {
-    this._person = new Delicious.Person(this, userName);
+    this._person = new Delicious.Person(userName);
   };
 
   /* steps:
@@ -14,65 +14,137 @@ var Delicious = provide.Delicious = Class.create(function(Delicious) {
    * 5. subtract out the links that the person already has
    */
 
-  this.run = function() {
-    var d = new Deferred(this);
-    d.add(
-      this.getLinks,
-      this.getOtherPeople,
-      this.getOtherPeoplesLinks);
-  }
-
-  this.getLinks = function() {
-    return this._person.links();
-  };
-
-  this.getOtherPeople = function(links) {
-    this._otherPeople = {};
-    return this._otherPeople;
-  };
-
-  this.getOtherPeoplesLinks = function(people) {};
-
-  this.load = function(path) {
-    var d = new Deferred();
-    return d.add(d.fn(Delicious.load, [path, d.okFn]));
-  };
-
   var baseURI = "http://feeds.delicious.com/v2/json/";
   var callbackNum = 0;
-  Delicious.load = function(path, callback) {
+  Delicious.load = function(path) {
     var jsonpCallback = 'callback' + (callbackNum++);
+    var d = new Deferred().pause();
     Delicious[jsonpCallback] = function() {
-      callback.apply(null, arguments);
       delete Delicious[jsonpCallback];
+      d.restart.apply(d, arguments);
     };
     var params = '?count=100&callback=Kite.provide.Delicious.'
       + jsonpCallback;
     load(baseURI + path + params);
+    return d;
   };
 });
 
+// TODO find a better way
+Model = function(Model) {
+  var store = {};
+  Model.find_or_create = function(opts) {
+    var m = new Model(opts), k = m.key();
+    return k in store ? store[k] : store[k] = m;
+  };
+
+  Model.select = function(filter) {
+    return _(store).select(filter);
+  };
+};
+
+Delicious.PersonLink = Class.create(function(PersonLink) {
+  Model(PersonLink);
+
+  this.init = function(opts) {
+    this._person = opts.person;
+    this._link = opts.link;
+  };
+
+  this.key = function() {
+    return [this._person.key(), this._link.key()].join();
+  };
+});
+
+Delicious.Relationship = Class.create(function(Relationship) {
+  Model(Relationship);
+
+  this.init = function(opts) {
+    this._person = opts.person;
+    this._otherPerson = opts.other;
+    this.depth = 0;
+  };
+
+  this.key = function() {
+    return [this._person.key(), this._otherPerson.key()].join();
+  };
+});
+
+
 Delicious.Person = Class.create(function(Person) {
-  this.init = function(delicious, name) {
-    this._delicious = delicious;
+  Model(Person);
+
+  this.init = function(name) {
     this._name = name;
-    this._links = [];
+  };
+  this.key = function() { return this._name; }
+
+  this.getRecommendations = function() {
+    var d = new Deferred(this);
+    d.add(
+      this.getLinks,
+      this.getOtherPeople);
+  };
+
+  this.getLinks = function() {
+    var self = this;
+    return Delicious.load(this._name).after(function(links) {
+       _(links).each(function(link) {
+         var link = Delicious.Link.find_or_create(link);
+         Delicious.PersonLink.find_or_create({ person: self, link: link });
+      });
+      return self.links();
+    });
   };
 
   this.links = function() {
-    return this._delicious.load(this._name);
+    var self = this;
+    return _.pluck(Delicious.PersonLink.select(function(pl) { return pl._person === self }),'_link');
   };
+
+  this.getOtherPeople = function(links) {
+    var self = this;
+    var d = new Deferred();
+    _(links).each(function(link) {
+      d.add(function() {
+        return link.getPeople().after(function(people) {
+          _(people).each(function(person) {
+            if (person === self) return;
+            var relationship = Delicious.Relationship.find_or_create({ person: self, other: person });
+            relationship.depth++;
+          });
+        });
+      });
+    });
+    d.after(function() { return self.relationships(); });
+    return d;
+  };
+
+  this.relationships = function() {
+    var self = this;
+    return _.pluck(Delicious.Relationship.select(function(r) { return r._person === self }), '_other');
+  };
+
 });
 
 Delicious.Link = Class.create(function(Link) {
-  this.init = function(url) {
-    this._delicious = delicious;
-    this._url = url;
-    this._people = [];
-  };
+  Model(Link);
 
-  this.people = function() {
-    return this._delicious.load('url/' + md5(this._url));
+  this.init = function(opts) {
+    this._url = opts.u;
+    this._name = opts.t;
+    this._description = opts.n;
+  };
+  this.key = function() { return this._url };
+
+  this.getPeople = function() {
+    var self = this;
+    return Delicious.load('url/' + md5(this._url)).after(function(bookmarks) {
+      _(bookmarks).each(function(bookmark) {
+        var person = Delicious.Person.find_or_create(bookmark.a);
+        Delicious.PersonLink.find_or_create({ person: person, link: self });
+      })
+    });
   };
 });
 
