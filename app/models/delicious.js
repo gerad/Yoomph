@@ -33,13 +33,17 @@ var Delicious = provide.Delicious = Class.create(function(Delicious) {
 // TODO find a better way
 Model = function(Model) {
   var store = {};
-  Model.find_or_create = function(opts) {
+  Model.find_or_create = function find_or_create(opts) {
     var m = new Model(opts), k = m.key();
     return k in store ? store[k] : store[k] = m;
   };
 
-  Model.select = function(filter) {
+  Model.select = function select(filter) {
     return _(store).select(filter);
+  };
+
+  Model.find_by = function find_by(variable, value) {
+    return Model.select(function(m) { return m[variable] === value; });
   };
 };
 
@@ -47,12 +51,12 @@ Delicious.PersonLink = Class.create(function(PersonLink) {
   Model(PersonLink);
 
   this.init = function(opts) {
-    this._person = opts.person;
-    this._link = opts.link;
+    this.person = opts.person;
+    this.link = opts.link;
   };
 
   this.key = function() {
-    return [this._person.key(), this._link.key()].join();
+    return [this.person.key(), this.link.key()];
   };
 });
 
@@ -60,13 +64,13 @@ Delicious.Relationship = Class.create(function(Relationship) {
   Model(Relationship);
 
   this.init = function(opts) {
-    this._person = opts.person;
-    this._otherPerson = opts.other;
+    this.person = opts.person;
+    this.otherPerson = opts.otherPerson;
     this.depth = 0;
   };
 
   this.key = function() {
-    return [this._person.key(), this._otherPerson.key()].join();
+    return [this.person.key(), this.otherPerson.key()];
   };
 });
 
@@ -97,34 +101,42 @@ Delicious.Person = Class.create(function(Person) {
     });
   };
 
+  this.personLinks = function() {
+    return Delicious.PersonLink.find_by('person', this);
+  };
+
   this.links = function() {
-    var self = this;
-    return _.pluck(Delicious.PersonLink.select(function(pl) { return pl._person === self }),'_link');
+    return _(this.personLinks()).pluck('link');
   };
 
   this.getOtherPeople = function(links) {
     var self = this;
-    var d = new Deferred();
+    var d = new Deferred(this);
     _(links).each(function(link) {
-      d.add(function() {
-        return link.getPeople().after(function(people) {
-          _(people).each(function(person) {
-            if (person === self) return;
-            var relationship = Delicious.Relationship.find_or_create({ person: self, other: person });
-            relationship.depth++;
-          });
-        });
-      });
-    });
-    d.after(function() { return self.relationships(); });
+      d.add(
+        d.fn(link.getPeople, [], link),
+        this.createRelationships);
+    }, this);
+    d.after(this.relationships);
     return d;
   };
 
-  this.relationships = function() {
-    var self = this;
-    return _.pluck(Delicious.Relationship.select(function(r) { return r._person === self }), '_other');
+  this.createRelationships = function createRelationships(people) {
+    _(people).each(function(person) {
+      if (person !== this) {
+        var relationship = Delicious.Relationship.find_or_create({ person: this, otherPerson: person });
+        relationship.depth ++;
+      }
+    }, this);
   };
 
+  this.relationships = function() {
+    return Delicious.Relationship.find_by('person', this);
+  };
+
+  this.otherPeople = function() {
+    return _(this.relationships()).pluck('otherPerson')
+  };
 });
 
 Delicious.Link = Class.create(function(Link) {
