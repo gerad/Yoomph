@@ -13,34 +13,91 @@
   <script>new function() { // closure
 eval(Kite.provides());
 
+function callbackFor(url) {
+  var match = url.match(/callback=Kite\.provide\.Delicious\.(callback\d+)/);
+  ok(match, "has callback " + match[1]);
+  return match[1];
+}
+
+function clear() {
+  for (var model in Delicious) {
+    if ('clear' in Delicious[model])
+      Delicious[model].clear();
+  }
+}
+
+module("delicious", {
+  setup: clear
+});
+
 test("can load jsonp", function() {
   var expected = "callback works!";
   load.mock(function(url) {
+    var callback = callbackFor(url);
     equals(url, "http://feeds.delicious.com/v2/json/gerad"
-      + "?count=100&callback=Kite.provide.Delicious.callback0");
-    Kite.provide.Delicious.callback0(expected);
+      + "?count=100&callback=Kite.provide.Delicious."
+      + callback);
+    Kite.provide.Delicious[callback](expected);
   });
   Delicious.load("gerad").after(function(result) {
     equals(result, expected);
   });
+  expect(3);
+});
+
+test("can get links", function() {
+  var expected = [{u:'http://a.com/'},{u:'http://b.com/'}];
+  load.mock(function(url) {
+    var callback = callbackFor(url);
+    equals(url, "http://feeds.delicious.com/v2/json/gerad"
+      + "?count=100&callback=Kite.provide.Delicious."
+      + callback);
+    Kite.provide.Delicious[callback](expected);
+  });
+
+  var gerad = new Delicious("gerad").person;
+  gerad.getLinks().after(function(links) {
+    same(_(links).pluck('url'), _(expected).pluck('u'));
+  });
+  expect(3);
+});
+
+test("can get relationships", function() {
+  var gerad = new Delicious("gerad").person;
+  var link = Delicious.Link.find_or_create({ u: 'http://google.com/'});
+
+  var expected = [{a:'one'}, {a:'two'}];
+  load.mock(function(url) {
+    var callback = callbackFor(url);
+    Kite.provide.Delicious[callback](expected);
+  });
+
+  gerad.getRelationships([link]).after(function() {
+    same(_(gerad.otherPeople()).pluck('name'), _(expected).pluck('a'));
+  });
   expect(2);
 });
 
-test("can load links", function() {
-  var expected = [{u:'http://a.com/'},{u:'http://b.com/'}];
+test("can calculate depths", function() {
+  var gerad = new Delicious("gerad").person;
+  var links = [
+    Delicious.Link.find_or_create({ u: 'http://a.com/'}),
+    Delicious.Link.find_or_create({ u: 'http://b.com/'})];
+
+  var expected = [
+    [{a:'one'}, {a:'two'}],
+    [{a:'one'}]];
   load.mock(function(url) {
-    equals(url, "http://feeds.delicious.com/v2/json/gerad"
-      + "?count=100&callback=Kite.provide.Delicious.callback1");
-    Kite.provide.Delicious.callback1(expected);
+    var callback = callbackFor(url);
+    Kite.provide.Delicious[callback](expected.pop());
   });
 
-  var delicious = new Delicious.Person("gerad");
-  delicious.getLinks().after(function(links) {
-    same(
-      _(links).pluck('_url'),
-      _(expected).pluck('u'));
+  gerad.getRelationships(links).after(function(relationships) {
+    var deepest = _(relationships).first();
+    equals(deepest.otherPerson.name, 'one');
+    equals(deepest.depth, 2);
   });
-  expect(2);
+  expect(4);
 });
 
 
