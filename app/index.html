@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" 
+                    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>Delicious</title>
+
+  <script type="text/javascript" src="../lib/js/jquery.js"></script>
+  <script type="text/javascript" src="../lib/js/underscore.js"></script>
+  <script type="text/javascript" src="../lib/js/kite.js"></script>
+  <script type="text/javascript" src="../lib/js/view.js"></script>
+  <script type="text/javascript" src="models/delicious.js"></script>
+
+  <script>new function() { // closure
+eval(Kite.provides());
+
+var view = new View();
+view.template("links", function() { /*
+<% _(links).each(function(link) { %>
+  <div id="link_<%= link.id %>">
+    <h2><a href="<%= link.url %>"><%= link.name %></a></h2>
+    <p><%= link.description %></p>
+    <div class="people"></div>
+  </div>
+<% }); %>
+*/ });
+
+view.template("people", function() { /*
+<% _(people).each(function(person) { %>
+  <a href="http://delicious.com/<%= person.name %>"><%= person.name %></a>
+<% }); %>
+*/ });
+
+view.template("relationships", function() { /*
+<table>
+  <tr><th>Person</th><th>Depth</th></tr>
+  <% _(relationships).each(function(relationship) { %>
+    <% var person = relationship.otherPerson; %>
+    <tr>
+      <td><a href="http://delicious.com/<%= person.name %>"><%= person.name %></a></td>
+      <td><%= relationship.depth %></td>
+    </tr>
+  <% }); %>
+</table>
+*/ });
+
+var gerad = new Delicious('gerad').person;
+gerad.getLinks().after(function(links) {
+  $('#links').html(view.render('links', {links: links}));
+  var d = new Deferred();
+  var i = 0;
+  _(links).each(function(link) {
+    d.waitFor(link.getPeople().after(function(people) {
+      $('#link_' + link.id + ' .people').html(view.render('people', {people: people}));
+      gerad.createRelationships(people);
+      $('#relationships').html(['Loading',++i,'of',links.length,'&hellip;'].join(' '));
+    }));
+  });
+  d.after(function() {
+    $('#relationships').html(view.render('relationships', {relationships: gerad.relationships()}));
+  });
+});
+
+  }</script>
+
+</head>
+<body>
+ <h1>Delicious</h1>
+ <div style="width:500px;float:left;padding:0px 25px">
+   <h2>Links</h2>
+   <div id="links">Loading&hellip;</div>
+ </div>
+ <div style="width:250px;float:left">
+  <h2>Relationships</h2>
+  <div id="relationships">Loading&hellip;</div>  
+ </div>
+</body>
+</html>

@@ -33,10 +33,17 @@ var Delicious = provide.Delicious = Class.create(function(Delicious) {
 // TODO find a better way
 Model = function(Model) {
   var store = {};
+  var id = 0;
+
   Model.find_or_create = function find_or_create(opts) {
     var m = new Model(opts), k = m.key();
-    return k in store ? store[k] : store[k] = m;
+    return k in store ? store[k] : Model._store(k, m);
   };
+
+  Model._store = function _store(k, model) {
+    model.id = id++;
+    return store[k] = model;
+  }
 
   Model.select = function select(filter) {
     return _(store).select(filter);
@@ -135,7 +142,7 @@ Delicious.Person = Class.create(function(Person) {
   };
 
   this.relationships = function() {
-    return Delicious.Relationship.find_by('person', this);
+    return _(Delicious.Relationship.find_by('person', this)).sortBy(function(r) { return -r.depth; });
   };
 
   this.otherPeople = function() {
@@ -148,7 +155,7 @@ Delicious.Link = Class.create(function(Link) {
 
   this.init = function(opts) {
     this.url = opts.u;
-    this.name = opts.t;
+    this.name = opts.d;
     this.description = opts.n;
   };
   this.key = function() { return this.url };
